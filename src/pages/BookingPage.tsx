@@ -51,11 +51,11 @@ const BookingPage = () => {
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
 
-    addBooking({
+    const success = await addBooking({
       serviceId,
       serviceName: selectedService?.name || "",
       customerName: name,
@@ -67,8 +67,12 @@ const BookingPage = () => {
       notes,
     });
 
-    setSubmitted(true);
-    toast.success("تم تأكيد حجزك بنجاح!");
+    if (success) {
+      setSubmitted(true);
+      toast.success("تم إرسال طلب الحجز بنجاح! سيتم مراجعته من الإدارة");
+    } else {
+      toast.error("حدث خطأ أثناء إرسال الحجز. تأكد من تسجيل الدخول");
+    }
   };
 
   if (submitted) {

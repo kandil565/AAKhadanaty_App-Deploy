@@ -1,31 +1,43 @@
 import { Link } from "react-router-dom";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { CalendarCheck, DollarSign, Star, TrendingUp, BookOpen, Users } from "lucide-react";
+import { CalendarCheck, DollarSign, TrendingUp, BookOpen, CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useBookings } from "@/contexts/BookingContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { formatPrice, statusLabels } from "@/data/services";
+import { formatPrice, statusLabels, statusColors } from "@/data/services";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Navigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 const DashboardPage = () => {
-  const { isAuthenticated } = useAuth();
-  const { bookings } = useBookings();
+  const { isAuthenticated, user } = useAuth();
+  const { bookings, allBookings, loading, fetchAllBookings, updateStatus } = useBookings();
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isAuthenticated && user?.isAdmin) {
+      fetchAllBookings();
+    }
+  }, [isAuthenticated, user, fetchAllBookings]);
 
   if (!isAuthenticated) return <Navigate to="/login" />;
 
-  const totalRevenue = bookings.filter((b) => b.status === "completed").reduce((s, b) => s + b.price, 0);
-  const totalBookings = bookings.length;
-  const completedBookings = bookings.filter((b) => b.status === "completed").length;
-  const pendingBookings = bookings.filter((b) => b.status === "pending").length;
+  const displayBookings = user?.isAdmin ? allBookings : bookings;
+
+  const totalRevenue = displayBookings.filter((b) => b.status === "completed").reduce((s, b) => s + b.price, 0);
+  const totalBookings = displayBookings.length;
+  const completedBookings = displayBookings.filter((b) => b.status === "completed").length;
+  const pendingBookings = displayBookings.filter((b) => b.status === "pending").length;
 
   const statusData = [
-    { name: statusLabels.pending, value: bookings.filter((b) => b.status === "pending").length, color: "hsl(38, 92%, 50%)" },
-    { name: statusLabels.confirmed, value: bookings.filter((b) => b.status === "confirmed").length, color: "hsl(213, 80%, 50%)" },
-    { name: statusLabels.completed, value: bookings.filter((b) => b.status === "completed").length, color: "hsl(142, 70%, 45%)" },
-    { name: statusLabels.canceled, value: bookings.filter((b) => b.status === "canceled").length, color: "hsl(0, 72%, 51%)" },
+    { name: statusLabels.pending, value: displayBookings.filter((b) => b.status === "pending").length, color: "hsl(38, 92%, 50%)" },
+    { name: statusLabels.confirmed, value: displayBookings.filter((b) => b.status === "confirmed").length, color: "hsl(213, 80%, 50%)" },
+    { name: statusLabels.completed, value: displayBookings.filter((b) => b.status === "completed").length, color: "hsl(142, 70%, 45%)" },
+    { name: statusLabels.canceled, value: displayBookings.filter((b) => b.status === "canceled").length, color: "hsl(0, 72%, 51%)" },
   ];
 
   const monthlyData = [
@@ -40,6 +52,30 @@ const DashboardPage = () => {
     { icon: TrendingUp, label: "حجوزات مكتملة", value: completedBookings.toString(), color: "text-accent" },
     { icon: BookOpen, label: "حجوزات قيد الانتظار", value: pendingBookings.toString(), color: "text-warning" },
   ];
+
+  const handleApprove = async (id: string) => {
+    setUpdatingId(id);
+    const success = await updateStatus(id, "confirmed");
+    if (success) {
+      toast.success("تم قبول الحجز بنجاح ✅");
+    } else {
+      toast.error("حدث خطأ أثناء تحديث الحجز");
+    }
+    setUpdatingId(null);
+  };
+
+  const handleReject = async (id: string) => {
+    setUpdatingId(id);
+    const success = await updateStatus(id, "canceled");
+    if (success) {
+      toast.success("تم رفض الحجز ❌");
+    } else {
+      toast.error("حدث خطأ أثناء تحديث الحجز");
+    }
+    setUpdatingId(null);
+  };
+
+  const pendingList = displayBookings.filter((b) => b.status === "pending");
 
   return (
     <div className="min-h-screen">
@@ -72,6 +108,91 @@ const DashboardPage = () => {
             </Card>
           ))}
         </div>
+
+        {/* Admin Bookings Management */}
+        {user?.isAdmin && (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                📋 إدارة الحجوزات المعلقة
+                {pendingList.length > 0 && (
+                  <Badge className="bg-warning/20 text-warning border-warning/30">{pendingList.length}</Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="flex items-center justify-center py-10">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  <span className="mr-3 text-muted-foreground">جاري التحميل...</span>
+                </div>
+              ) : pendingList.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">🎉 لا توجد حجوزات معلقة حالياً</p>
+              ) : (
+                <div className="space-y-4">
+                  {pendingList.map((b) => (
+                    <div key={b.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border rounded-lg bg-muted/30">
+                      <div className="space-y-1 flex-1">
+                        <div className="font-bold text-lg">{b.serviceName}</div>
+                        <div className="text-sm text-muted-foreground">
+                          👤 {b.customerName} • 📞 {b.customerPhone}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          📅 {b.date} • ⏰ {b.time}
+                        </div>
+                        {b.notes && <div className="text-sm text-muted-foreground">📝 {b.notes}</div>}
+                        <div className="font-bold text-primary">{formatPrice(b.price)}</div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          className="bg-green-600 hover:bg-green-700 text-white"
+                          onClick={() => handleApprove(b.id)}
+                          disabled={updatingId === b.id}
+                        >
+                          {updatingId === b.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-1" />}
+                          قبول
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleReject(b.id)}
+                          disabled={updatingId === b.id}
+                        >
+                          {updatingId === b.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4 mr-1" />}
+                          رفض
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* All bookings list */}
+              {displayBookings.length > 0 && (
+                <div className="mt-8">
+                  <h3 className="font-bold text-lg mb-4">جميع الحجوزات ({displayBookings.length})</h3>
+                  <div className="space-y-3">
+                    {displayBookings.map((b) => (
+                      <div key={b.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 border rounded-lg">
+                        <div className="space-y-1 flex-1">
+                          <div className="font-semibold">{b.serviceName}</div>
+                          <div className="text-xs text-muted-foreground">
+                            👤 {b.customerName} • 📅 {b.date} • ⏰ {b.time}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-primary">{formatPrice(b.price)}</span>
+                          <Badge className={statusColors[b.status]}>{statusLabels[b.status]}</Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

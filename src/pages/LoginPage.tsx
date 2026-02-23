@@ -15,11 +15,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { toast } from "sonner";
+import { Eye, EyeOff } from "lucide-react"; // Import Eye and EyeOff icons
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false); // State for password visibility
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -78,12 +80,28 @@ const LoginPage = () => {
               </div>
               <div className="space-y-2">
                 <Label>كلمة المرور</Label>
-                <Input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••"
-                />
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"} // Toggle input type
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••"
+                    className="pr-10" // Add padding for the icon
+                  />
+                  <Button
+                    type="button" // Prevent form submission
+                    variant="ghost"
+                    size="sm"
+                    className="absolute inset-y-0 right-0 flex items-center px-3"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </Button>
+                </div>
               </div>
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? "جاري التحميل..." : "تسجيل الدخول"}

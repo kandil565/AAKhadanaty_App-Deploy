@@ -14,6 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { toast } from "sonner";
+import { Eye, EyeOff } from "lucide-react"; // Import Eye and EyeOff icons
 
 const RegisterPage = () => {
   const [name, setName] = useState("");
@@ -21,6 +22,7 @@ const RegisterPage = () => {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false); // State for password visibility
   const { register } = useAuth();
   const navigate = useNavigate();
 
@@ -91,12 +93,28 @@ const RegisterPage = () => {
               </div>
               <div className="space-y-2">
                 <Label>كلمة المرور</Label>
-                <Input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="6 أحرف على الأقل"
-                />
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"} // Toggle type based on state
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="6 أحرف على الأقل"
+                    className="pr-10" // Add padding for the icon
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute inset-y-0 right-0 h-full px-3 flex items-center"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </Button>
+                </div>
               </div>
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? "جاري الإنشاء..." : "إنشاء الحساب"}
