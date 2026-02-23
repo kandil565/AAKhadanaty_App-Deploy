@@ -1,0 +1,38 @@
+name: CI Build
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install root dependencies
+        run: npm install
+
+      - name: Install backend dependencies
+        run: |
+          cd backend
+          npm install
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Run basic backend health check (start server)
+        run: |
+          cd backend
+          nohup npm start &
+          sleep 3
+          curl --fail http://localhost:5000/api/health || true

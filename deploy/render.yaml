@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: aakhadanaty-backend
+    env: node
+    repo: https://github.com/kandil565/AAKhadanaty_App-master
+    branch: main
+    buildCommand: "cd backend && npm install"
+    startCommand: "cd backend && npm start"
+    plan: free
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+
+  - type: static
+    name: aakhadanaty-frontend
+    env: static
+    repo: https://github.com/kandil565/AAKhadanaty_App-master
+    branch: main
+    buildCommand: "npm install && npm run build"
+    publishRoot: dist
+    plan: free
