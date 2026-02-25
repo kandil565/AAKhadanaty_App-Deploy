@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
-import { ar } from "date-fns/locale";
+import { ar, enUS } from "date-fns/locale";
 import { CalendarIcon, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { toast } from "sonner";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const timeSlots = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"];
 
@@ -26,6 +27,7 @@ const BookingPage = () => {
   const navigate = useNavigate();
   const { addBooking } = useBookings();
   const { user } = useAuth();
+  const { t, language, isRTL } = useLanguage();
 
   const [serviceId, setServiceId] = useState(params.get("service") || "");
   const [date, setDate] = useState<Date>();
@@ -41,12 +43,12 @@ const BookingPage = () => {
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!serviceId) e.service = "اختر خدمة";
-    if (!date) e.date = "اختر تاريخ";
-    if (!time) e.time = "اختر وقت";
-    if (!name.trim()) e.name = "أدخل الاسم";
-    if (!phone.trim() || phone.length < 11) e.phone = "أدخل رقم هاتف صحيح (11 رقم)";
-    if (!email.trim() || !email.includes("@")) e.email = "أدخل بريد إلكتروني صحيح";
+    if (!serviceId) e.service = t("chooseService");
+    if (!date) e.date = t("chooseDate");
+    if (!time) e.time = t("chooseTime");
+    if (!name.trim()) e.name = t("enterValidName");
+    if (!phone.trim() || phone.length < 11) e.phone = t("enterValidPhone");
+    if (!email.trim() || !email.includes("@")) e.email = t("enterValidEmail");
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -69,11 +71,13 @@ const BookingPage = () => {
 
     if (success) {
       setSubmitted(true);
-      toast.success("تم إرسال طلب الحجز بنجاح! سيتم مراجعته من الإدارة");
+      toast.success(t("bookingSuccessMsg"));
     } else {
-      toast.error("حدث خطأ أثناء إرسال الحجز. تأكد من تسجيل الدخول");
+      toast.error(t("bookingError"));
     }
   };
+
+  const locale = language === "ar" ? ar : enUS;
 
   if (submitted) {
     return (
@@ -83,15 +87,15 @@ const BookingPage = () => {
           <div className="w-20 h-20 rounded-full bg-success/20 flex items-center justify-center mx-auto">
             <CheckCircle className="h-10 w-10 text-success" />
           </div>
-          <h1 className="text-2xl font-bold">تم الحجز بنجاح!</h1>
+          <h1 className="text-2xl font-bold">{t("bookingSuccessTitle")}</h1>
           <p className="text-muted-foreground">
-            تم حجز خدمة <strong>{selectedService?.name}</strong> بتاريخ{" "}
-            <strong>{format(date!, "dd MMMM yyyy", { locale: ar })}</strong> الساعة <strong>{time}</strong>.
+            {t("bookedServiceOn")} <strong>{isRTL ? selectedService?.name : selectedService?.nameEn || selectedService?.name}</strong> {t("onDate")}{" "}
+            <strong>{format(date!, "dd MMMM yyyy", { locale })}</strong> {t("atTime")} <strong>{time}</strong>.
           </p>
-          <p className="text-sm text-muted-foreground">سيتم التواصل معك لتأكيد الموعد.</p>
+          <p className="text-sm text-muted-foreground">{t("willContactYou")}</p>
           <div className="flex gap-3 justify-center">
-            <Button onClick={() => navigate("/my-bookings")}>حجوزاتي</Button>
-            <Button variant="outline" onClick={() => navigate("/")}>الرئيسية</Button>
+            <Button onClick={() => navigate("/my-bookings")}>{t("myBookings")}</Button>
+            <Button variant="outline" onClick={() => navigate("/")}>{t("homePage")}</Button>
           </div>
         </div>
         <Footer />
@@ -104,27 +108,27 @@ const BookingPage = () => {
       <Navbar />
       <div className="container mx-auto px-4 py-10 max-w-2xl">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">احجز خدمتك الآن</h1>
-          <p className="text-muted-foreground">املأ البيانات التالية لإتمام الحجز</p>
+          <h1 className="text-3xl font-bold mb-2">{t("bookingTitle")}</h1>
+          <p className="text-muted-foreground">{t("bookingDesc")}</p>
         </div>
 
         <form onSubmit={handleSubmit}>
           <Card>
             <CardHeader>
-              <CardTitle>بيانات الحجز</CardTitle>
+              <CardTitle>{t("bookingData")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-5">
               {/* Service */}
               <div className="space-y-2">
-                <Label>الخدمة *</Label>
+                <Label>{t("serviceLabel")} {t("required")}</Label>
                 <Select value={serviceId} onValueChange={setServiceId}>
                   <SelectTrigger>
-                    <SelectValue placeholder="اختر الخدمة" />
+                    <SelectValue placeholder={t("selectService")} />
                   </SelectTrigger>
                   <SelectContent>
                     {services.map((s) => (
                       <SelectItem key={s.id} value={s.id}>
-                        {s.name} - {formatPrice(s.price)}
+                        {isRTL ? s.name : s.nameEn || s.name} - {formatPrice(s.price)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -135,12 +139,12 @@ const BookingPage = () => {
               {/* Date & Time */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>التاريخ *</Label>
+                  <Label>{t("dateLabel")} {t("required")}</Label>
                   <Popover>
                     <PopoverTrigger asChild>
-                      <Button variant="outline" className={cn("w-full justify-start text-right", !date && "text-muted-foreground")}>
-                        <CalendarIcon className="ml-2 h-4 w-4" />
-                        {date ? format(date, "dd/MM/yyyy") : "اختر التاريخ"}
+                      <Button variant="outline" className={cn("w-full justify-start", isRTL ? "text-right" : "text-left", !date && "text-muted-foreground")}>
+                        <CalendarIcon className={`${isRTL ? "ml-2" : "mr-2"} h-4 w-4`} />
+                        {date ? format(date, "dd/MM/yyyy") : t("selectDate")}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
@@ -150,20 +154,21 @@ const BookingPage = () => {
                         onSelect={setDate}
                         disabled={(d) => d < new Date()}
                         className="p-3 pointer-events-auto"
+                        locale={locale}
                       />
                     </PopoverContent>
                   </Popover>
                   {errors.date && <p className="text-sm text-destructive">{errors.date}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label>الوقت *</Label>
+                  <Label>{t("timeLabel")} {t("required")}</Label>
                   <Select value={time} onValueChange={setTime}>
                     <SelectTrigger>
-                      <SelectValue placeholder="اختر الوقت" />
+                      <SelectValue placeholder={t("selectTime")} />
                     </SelectTrigger>
                     <SelectContent>
-                      {timeSlots.map((t) => (
-                        <SelectItem key={t} value={t}>{t}</SelectItem>
+                      {timeSlots.map((t_slot) => (
+                        <SelectItem key={t_slot} value={t_slot}>{t_slot}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -173,48 +178,48 @@ const BookingPage = () => {
 
               {/* Contact */}
               <div className="space-y-2">
-                <Label>الاسم الكامل *</Label>
-                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="أدخل اسمك" />
+                <Label>{t("fullName")} {t("required")}</Label>
+                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("enterFullName")} />
                 {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>رقم الهاتف *</Label>
+                  <Label>{t("phoneLabel")} {t("required")}</Label>
                   <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="01XXXXXXXXX" type="tel" />
                   {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label>البريد الإلكتروني *</Label>
+                  <Label>{t("emailLabel")} {t("required")}</Label>
                   <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com" type="email" />
                   {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>ملاحظات</Label>
-                <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="أضف أي تفاصيل أو ملاحظات..." />
+                <Label>{t("notes")}</Label>
+                <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("notesPlaceholder")} />
               </div>
 
               {/* Summary */}
               {selectedService && (
                 <div className="bg-muted rounded-lg p-4 space-y-2">
-                  <h4 className="font-bold">ملخص الحجز</h4>
+                  <h4 className="font-bold">{t("bookingSummary")}</h4>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">الخدمة</span>
-                    <span>{selectedService.name}</span>
+                    <span className="text-muted-foreground">{t("serviceLabel")}</span>
+                    <span>{isRTL ? selectedService.name : selectedService.nameEn || selectedService.name}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">المدة المتوقعة</span>
-                    <span>{selectedService.duration}</span>
+                    <span className="text-muted-foreground">{t("expectedDuration")}</span>
+                    <span>{isRTL ? selectedService.duration : selectedService.durationEn || selectedService.duration}</span>
                   </div>
                   <div className="flex justify-between font-bold border-t border-border pt-2">
-                    <span>الإجمالي</span>
+                    <span>{t("total")}</span>
                     <span className="text-primary">{formatPrice(selectedService.price)}</span>
                   </div>
                 </div>
               )}
 
               <Button type="submit" className="w-full" size="lg">
-                تأكيد الحجز
+                {t("submitBooking")}
               </Button>
             </CardContent>
           </Card>

@@ -6,17 +6,25 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useBookings } from "@/contexts/BookingContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { formatPrice, statusLabels, statusColors } from "@/data/services";
+import { formatPrice, statusColors, services } from "@/data/services";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const DashboardPage = () => {
   const { isAuthenticated, user } = useAuth();
   const { bookings, allBookings, loading, fetchAllBookings, updateStatus } = useBookings();
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const { t, isRTL } = useLanguage();
+
+  const getLocalizedServiceName = (serviceId: string, fallbackName: string) => {
+    if (isRTL) return fallbackName;
+    const service = services.find((s) => s.id === serviceId);
+    return service?.nameEn || fallbackName;
+  };
 
   useEffect(() => {
     if (isAuthenticated && user?.isAdmin) {
@@ -34,32 +42,32 @@ const DashboardPage = () => {
   const pendingBookings = displayBookings.filter((b) => b.status === "pending").length;
 
   const statusData = [
-    { name: statusLabels.pending, value: displayBookings.filter((b) => b.status === "pending").length, color: "hsl(38, 92%, 50%)" },
-    { name: statusLabels.confirmed, value: displayBookings.filter((b) => b.status === "confirmed").length, color: "hsl(213, 80%, 50%)" },
-    { name: statusLabels.completed, value: displayBookings.filter((b) => b.status === "completed").length, color: "hsl(142, 70%, 45%)" },
-    { name: statusLabels.canceled, value: displayBookings.filter((b) => b.status === "canceled").length, color: "hsl(0, 72%, 51%)" },
+    { name: t("pending"), value: displayBookings.filter((b) => b.status === "pending").length, color: "hsl(38, 92%, 50%)" },
+    { name: t("confirmed"), value: displayBookings.filter((b) => b.status === "confirmed").length, color: "hsl(213, 80%, 50%)" },
+    { name: t("completed"), value: displayBookings.filter((b) => b.status === "completed").length, color: "hsl(142, 70%, 45%)" },
+    { name: t("canceled"), value: displayBookings.filter((b) => b.status === "canceled").length, color: "hsl(0, 72%, 51%)" },
   ];
 
   const monthlyData = [
-    { month: "يناير", bookings: 15 },
-    { month: "فبراير", bookings: totalBookings },
-    { month: "مارس", bookings: 0 },
+    { month: t("jan"), bookings: 15 },
+    { month: t("feb"), bookings: totalBookings },
+    { month: t("mar"), bookings: 0 },
   ];
 
   const statCards = [
-    { icon: DollarSign, label: "إجمالي الإيرادات", value: formatPrice(totalRevenue), color: "text-success" },
-    { icon: CalendarCheck, label: "إجمالي الحجوزات", value: totalBookings.toString(), color: "text-primary" },
-    { icon: TrendingUp, label: "حجوزات مكتملة", value: completedBookings.toString(), color: "text-accent" },
-    { icon: BookOpen, label: "حجوزات قيد الانتظار", value: pendingBookings.toString(), color: "text-warning" },
+    { icon: DollarSign, label: t("totalRevenue"), value: formatPrice(totalRevenue), color: "text-success" },
+    { icon: CalendarCheck, label: t("totalBookings"), value: totalBookings.toString(), color: "text-primary" },
+    { icon: TrendingUp, label: t("completedBookingsCount"), value: completedBookings.toString(), color: "text-accent" },
+    { icon: BookOpen, label: t("pendingBookingsCount"), value: pendingBookings.toString(), color: "text-warning" },
   ];
 
   const handleApprove = async (id: string) => {
     setUpdatingId(id);
     const success = await updateStatus(id, "confirmed");
     if (success) {
-      toast.success("تم قبول الحجز بنجاح ✅");
+      toast.success(t("approveSuccess"));
     } else {
-      toast.error("حدث خطأ أثناء تحديث الحجز");
+      toast.error(t("updateError"));
     }
     setUpdatingId(null);
   };
@@ -68,9 +76,9 @@ const DashboardPage = () => {
     setUpdatingId(id);
     const success = await updateStatus(id, "canceled");
     if (success) {
-      toast.success("تم رفض الحجز ❌");
+      toast.success(t("rejectSuccess"));
     } else {
-      toast.error("حدث خطأ أثناء تحديث الحجز");
+      toast.error(t("updateError"));
     }
     setUpdatingId(null);
   };
@@ -81,14 +89,14 @@ const DashboardPage = () => {
     <div className="min-h-screen">
       <Navbar />
       <div className="container mx-auto px-4 py-10">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-bold">لوحة التحكم</h1>
-            <p className="text-muted-foreground">مرحباً بك في لوحة إدارة أخدماتي</p>
+            <h1 className="text-3xl font-bold">{t("adminDashboard")}</h1>
+            <p className="text-muted-foreground">{t("welcomeDashboard")}</p>
           </div>
           <div className="flex gap-2">
-            <Link to="/my-bookings"><Button variant="outline">حجوزاتي</Button></Link>
-            <Link to="/profile"><Button variant="outline">الملف الشخصي</Button></Link>
+            <Link to="/my-bookings"><Button variant="outline">{t("myBookings")}</Button></Link>
+            <Link to="/profile"><Button variant="outline">{t("profileTitle")}</Button></Link>
           </div>
         </div>
 
@@ -102,7 +110,7 @@ const DashboardPage = () => {
                 </div>
                 <div>
                   <div className="text-sm text-muted-foreground">{s.label}</div>
-                  <div className="text-2xl font-bold">{s.value}</div>
+                  <div className="text-2xl font-bold font-sans" dir="ltr">{s.value}</div>
                 </div>
               </CardContent>
             </Card>
@@ -114,9 +122,9 @@ const DashboardPage = () => {
           <Card className="mb-8">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                📋 إدارة الحجوزات المعلقة
+                📋 {t("managePendingBookings")}
                 {pendingList.length > 0 && (
-                  <Badge className="bg-warning/20 text-warning border-warning/30">{pendingList.length}</Badge>
+                  <Badge className="bg-warning/20 text-warning border-warning/30 px-2">{pendingList.length}</Badge>
                 )}
               </CardTitle>
             </CardHeader>
@@ -124,16 +132,16 @@ const DashboardPage = () => {
               {loading ? (
                 <div className="flex items-center justify-center py-10">
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                  <span className="mr-3 text-muted-foreground">جاري التحميل...</span>
+                  <span className={`${isRTL ? "mr-3" : "ml-3"} text-muted-foreground`}>{t("loading")}</span>
                 </div>
               ) : pendingList.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">🎉 لا توجد حجوزات معلقة حالياً</p>
+                <p className="text-center text-muted-foreground py-8">🎉 {t("noPendingBookings")}</p>
               ) : (
                 <div className="space-y-4">
                   {pendingList.map((b) => (
                     <div key={b.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border rounded-lg bg-muted/30">
                       <div className="space-y-1 flex-1">
-                        <div className="font-bold text-lg">{b.serviceName}</div>
+                        <div className="font-bold text-lg">{getLocalizedServiceName(b.serviceId, b.serviceName)}</div>
                         <div className="text-sm text-muted-foreground">
                           👤 {b.customerName} • 📞 {b.customerPhone}
                         </div>
@@ -150,8 +158,8 @@ const DashboardPage = () => {
                           onClick={() => handleApprove(b.id)}
                           disabled={updatingId === b.id}
                         >
-                          {updatingId === b.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-1" />}
-                          قبول
+                          {updatingId === b.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className={`h-4 w-4 ${isRTL ? "ml-1" : "mr-1"}`} />}
+                          {t("approve")}
                         </Button>
                         <Button
                           size="sm"
@@ -159,8 +167,8 @@ const DashboardPage = () => {
                           onClick={() => handleReject(b.id)}
                           disabled={updatingId === b.id}
                         >
-                          {updatingId === b.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4 mr-1" />}
-                          رفض
+                          {updatingId === b.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className={`h-4 w-4 ${isRTL ? "ml-1" : "mr-1"}`} />}
+                          {t("reject")}
                         </Button>
                       </div>
                     </div>
@@ -171,19 +179,19 @@ const DashboardPage = () => {
               {/* All bookings list */}
               {displayBookings.length > 0 && (
                 <div className="mt-8">
-                  <h3 className="font-bold text-lg mb-4">جميع الحجوزات ({displayBookings.length})</h3>
+                  <h3 className="font-bold text-lg mb-4">{t("allBookingsCounter")} ({displayBookings.length})</h3>
                   <div className="space-y-3">
                     {displayBookings.map((b) => (
                       <div key={b.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 border rounded-lg">
                         <div className="space-y-1 flex-1">
-                          <div className="font-semibold">{b.serviceName}</div>
+                          <div className="font-semibold">{getLocalizedServiceName(b.serviceId, b.serviceName)}</div>
                           <div className="text-xs text-muted-foreground">
                             👤 {b.customerName} • 📅 {b.date} • ⏰ {b.time}
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-bold text-primary">{formatPrice(b.price)}</span>
-                          <Badge className={statusColors[b.status]}>{statusLabels[b.status]}</Badge>
+                          <Badge className={statusColors[b.status]}>{t(b.status)}</Badge>
                         </div>
                       </div>
                     ))}
@@ -198,14 +206,14 @@ const DashboardPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
-              <CardTitle>الحجوزات الشهرية</CardTitle>
+              <CardTitle>{t("monthlyBookings")}</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={monthlyData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" />
-                  <YAxis />
+                  <YAxis orientation={isRTL ? "right" : "left"} />
                   <Tooltip />
                   <Bar dataKey="bookings" fill="hsl(213, 80%, 50%)" radius={[6, 6, 0, 0]} />
                 </BarChart>
@@ -215,7 +223,7 @@ const DashboardPage = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle>حالة الحجوزات</CardTitle>
+              <CardTitle>{t("bookingStatusDist")}</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={250}>

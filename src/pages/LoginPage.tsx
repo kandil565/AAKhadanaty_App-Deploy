@@ -15,20 +15,22 @@ import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { toast } from "sonner";
-import { Eye, EyeOff } from "lucide-react"; // Import Eye and EyeOff icons
+import { Eye, EyeOff } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false); // State for password visibility
+  const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      toast.error("يرجى ملء جميع الحقول");
+      toast.error(t("fillAllFields"));
       return;
     }
 
@@ -36,9 +38,8 @@ const LoginPage = () => {
     try {
       const isLoggedIn = await login(email, password);
       if (isLoggedIn) {
-        toast.success("تم تسجيل الدخول بنجاح!");
+        toast.success(t("loginSuccess"));
 
-        // Get user data from localStorage to check admin status
         const userData = localStorage.getItem("a5adamaty_user");
         if (userData) {
           const user = JSON.parse(userData);
@@ -49,10 +50,10 @@ const LoginPage = () => {
           }
         }
       } else {
-        toast.error("بيانات الدخول غير صحيحة");
+        toast.error(t("loginError"));
       }
     } catch (error) {
-      toast.error("حصل خطأ أثناء تسجيل الدخول");
+      toast.error(t("loginErrorGeneral"));
     } finally {
       setIsLoading(false);
     }
@@ -64,13 +65,13 @@ const LoginPage = () => {
       <div className="container mx-auto px-4 py-16 flex items-center justify-center">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl">تسجيل الدخول</CardTitle>
-            <CardDescription>ادخل بياناتك للوصول إلى حسابك</CardDescription>
+            <CardTitle className="text-2xl">{t("loginTitle")}</CardTitle>
+            <CardDescription>{t("loginDesc")}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label>البريد الإلكتروني</Label>
+                <Label>{t("email")}</Label>
                 <Input
                   type="email"
                   value={email}
@@ -79,17 +80,17 @@ const LoginPage = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label>كلمة المرور</Label>
+                <Label>{t("password")}</Label>
                 <div className="relative">
                   <Input
-                    type={showPassword ? "text" : "password"} // Toggle input type
+                    type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••"
-                    className="pr-10" // Add padding for the icon
+                    className="pr-10"
                   />
                   <Button
-                    type="button" // Prevent form submission
+                    type="button"
                     variant="ghost"
                     size="sm"
                     className="absolute inset-y-0 right-0 flex items-center px-3"
@@ -104,16 +105,16 @@ const LoginPage = () => {
                 </div>
               </div>
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "جاري التحميل..." : "تسجيل الدخول"}
+                {isLoading ? t("loading") : t("loginTitle")}
               </Button>
             </form>
             <p className="text-center text-sm mt-4 text-muted-foreground">
-              ليس لديك حساب؟{" "}
+              {t("noAccount")}{" "}
               <Link
                 to="/register"
                 className="text-primary hover:underline font-medium"
               >
-                إنشاء حساب
+                {t("createAccount")}
               </Link>
             </p>
           </CardContent>

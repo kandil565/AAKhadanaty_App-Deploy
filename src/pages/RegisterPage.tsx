@@ -14,7 +14,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { toast } from "sonner";
-import { Eye, EyeOff } from "lucide-react"; // Import Eye and EyeOff icons
+import { Eye, EyeOff } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const RegisterPage = () => {
   const [name, setName] = useState("");
@@ -22,18 +23,19 @@ const RegisterPage = () => {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false); // State for password visibility
+  const [showPassword, setShowPassword] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !email || !phone || !password) {
-      toast.error("يرجى ملء جميع الحقول");
+      toast.error(t("fillAllFields"));
       return;
     }
     if (password.length < 6) {
-      toast.error("كلمة المرور يجب أن تكون 6 أحرف على الأقل");
+      toast.error(t("passwordMin"));
       return;
     }
 
@@ -41,14 +43,13 @@ const RegisterPage = () => {
     try {
       const result = await register(name, email, phone, password);
       if (result.success) {
-        toast.success("تم إنشاء الحساب بنجاح!");
-        // New users go to home page
+        toast.success(t("registerSuccess"));
         navigate("/");
       } else {
-        toast.error(result.message || "البريد الإلكتروني مسجل بالفعل");
+        toast.error(result.message || t("emailRegistered"));
       }
     } catch (error) {
-      toast.error("حصل خطأ أثناء إنشاء الحساب");
+      toast.error(t("registerError"));
     } finally {
       setIsLoading(false);
     }
@@ -60,21 +61,21 @@ const RegisterPage = () => {
       <div className="container mx-auto px-4 py-16 flex items-center justify-center">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl">إنشاء حساب جديد</CardTitle>
-            <CardDescription>سجّل الآن واستمتع بخدماتنا</CardDescription>
+            <CardTitle className="text-2xl">{t("registerTitle")}</CardTitle>
+            <CardDescription>{t("registerDesc")}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label>الاسم الكامل</Label>
+                <Label>{t("fullName")}</Label>
                 <Input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="أدخل اسمك"
+                  placeholder={t("enterName")}
                 />
               </div>
               <div className="space-y-2">
-                <Label>البريد الإلكتروني</Label>
+                <Label>{t("email")}</Label>
                 <Input
                   type="email"
                   value={email}
@@ -83,7 +84,7 @@ const RegisterPage = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label>رقم الهاتف</Label>
+                <Label>{t("phone")}</Label>
                 <Input
                   type="tel"
                   value={phone}
@@ -92,14 +93,14 @@ const RegisterPage = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label>كلمة المرور</Label>
+                <Label>{t("password")}</Label>
                 <div className="relative">
                   <Input
-                    type={showPassword ? "text" : "password"} // Toggle type based on state
+                    type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="6 أحرف على الأقل"
-                    className="pr-10" // Add padding for the icon
+                    placeholder={t("minChars")}
+                    className="pr-10"
                   />
                   <Button
                     type="button"
@@ -117,16 +118,16 @@ const RegisterPage = () => {
                 </div>
               </div>
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "جاري الإنشاء..." : "إنشاء الحساب"}
+                {isLoading ? t("creatingAccount") : t("registerBtn")}
               </Button>
             </form>
             <p className="text-center text-sm mt-4 text-muted-foreground">
-              لديك حساب بالفعل؟{" "}
+              {t("alreadyHaveAccount")}{" "}
               <Link
                 to="/login"
                 className="text-primary hover:underline font-medium"
               >
-                تسجيل الدخول
+                {t("loginTitle")}
               </Link>
             </p>
           </CardContent>
